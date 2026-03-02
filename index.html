@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset=utf-8>
+    <title>___</title>
+    <meta name=viewport content="width=device-width">
+    <style>
+      * {box-sizing:border-box;margin:0;padding:0;border:0}
+      html,body{position:fixed;top:0;left:0;width:100%;height:100%;text-align:center;background:#000;color:#eee}
+      canvas{position:absolute;width:240px;left:0;top:calc(50% - 120px);image-rendering:pixelated;image-rendering:optimizeSpeed}
+      #gtitle{position:absolute;top:0;font-size:1rem;width:100%}
+      footer{position:absolute;bottom:6px;font-size:0.7rem;width:100%}
+    </style>
+  </head>
+  <body>
+    <h2 id=gtitle></h2>
+    <canvas id=C width=128 height=128 moz-opaque></canvas>
+    <footer><s>&copy;</s>&nbsp;Luxferre 2021. No rights reserved</footer>
+    <script src="config.js"></script>
+    <script>
+      function startEngine(engineId, titleElem, canvasElem, gameData, gameTitle, gameFile) {
+        var engineCfg = window.emuConfig.engines[engineId] 
+        window.engineId = engineId
+        window.engineRootDir = '/engines/' + engineId
+        canvasElem.oncontextmenu = function(e){e.preventDefault()}
+        canvasElem.width = engineCfg.screen.width
+        canvasElem.height = engineCfg.screen.height
+        canvasElem.style.top = 'calc(50% - ' + (parseInt(window.getComputedStyle(canvasElem).height) >> 1)+'px)'
+        var ldr = document.createElement('script')
+        ldr.src = window.engineRootDir + '/load.js'
+        ldr.onload = function() {
+          window.LoadEngine(engineCfg, titleElem, canvasElem, gameData, gameTitle, gameFile)
+        }
+        document.body.appendChild(ldr)
+      }
+      window.addEventListener('DOMContentLoaded', function() {
+        var gameTitle = document.getElementById('gtitle'),
+            gameCanvas = document.getElementById('C'), 
+            pickKeyHandler = function(e) {
+          if(e.key === 'Enter' || e.key === 'Call') {
+            var picker = new MozActivity({name: "pick"})
+            picker.onsuccess = function() {
+              var fName = picker.result.blob.name
+              for(var ext in window.emuConfig.extensions) {
+                if(fName.endsWith(ext)) {
+                  window.removeEventListener('keydown', pickKeyHandler)
+                  var loadParams = window.emuConfig.extensions[ext]
+                  if(loadParams.loadAs === 'url') { //loading as a virtual URL
+                    startEngine(loadParams.engine, gameTitle, gameCanvas, null, fName, URL.createObjectURL(picker.result.blob))
+                  }
+                  else { //reading and loading as Uint8Array data
+                    var reader = new FileReader()
+                    reader.onload = function(e) {
+                      var content = new Uint8Array(reader.result)
+                      startEngine(loadParams.engine, gameTitle, gameCanvas, content, fName)
+                    }
+                    reader.readAsArrayBuffer(picker.result.blob)
+                  }
+                }
+              }
+            }
+          }
+        }
+        window.addEventListener('keydown', pickKeyHandler)
+        gameTitle.textContent = emuConfig.global.name
+        document.title = emuConfig.global.name
+        var ctx = gameCanvas.getContext('2d')
+        ctx.font = '22px sans-serif'
+        ctx.fillStyle = '#eee'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'center'
+        ctx.fillText('Pick a game', gameCanvas.width >> 1, gameCanvas.height >> 1)
+      })
+    </script>
+  </body>
+</html>
