@@ -5,7 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MobiPico</title>
     <style>
-        /* Basic styles for the button */
+        body {
+            margin: 0;
+            padding: 10px;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        .game-picker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
         .load-game-button {
             display: inline-block;
             padding: 10px 20px;
@@ -17,33 +31,111 @@
             cursor: pointer;
         }
 
+        .load-game-button:hover {
+            background-color: darkblue;
+        }
+
         .file-picker {
             display: none;
+        }
+
+        #gameContainer {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
         }
     </style>
 </head>
 <body>
-    <h1>Welcome to MobiPico</h1>
-    <button class="load-game-button" id="loadGameButton">Load Game</button>
-    <input type="file" class="file-picker" id="filePicker" />
+    <div id="gamePicker" class="game-picker">
+        <h1>Welcome to MobiPico</h1>
+        <p>Select a PICO-8 game file (.p8 or .p8.png)</p>
+        <button class="load-game-button" id="loadGameButton">Load Game</button>
+        <input type="file" class="file-picker" id="filePicker" accept=".p8,.p8.png" />
+    </div>
+
+    <div id="gameContainer">
+        <h2 id="gameTitle"></h2>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <!-- Load configuration and engine loader -->
+    <script src="config.js"></script>
+    <script src="engines/pico8/load.js"></script>
 
     <script>
+        // Setup engine root directory
+        window.engineRootDir = 'engines/pico8';
+
         const loadGameButton = document.getElementById('loadGameButton');
         const filePicker = document.getElementById('filePicker');
+        const gamePicker = document.getElementById('gamePicker');
+        const gameContainer = document.getElementById('gameContainer');
+        const gameTitle = document.getElementById('gameTitle');
+        const gameCanvas = document.getElementById('gameCanvas');
 
         loadGameButton.addEventListener('click', () => {
             filePicker.click();
         });
 
         filePicker.addEventListener('change', (event) => {
-            // Logic to handle file selection
             const file = event.target.files[0];
             if (file) {
-                console.log(`File selected: ${file.name}`);
-                event.preventDefault();
-                filePicker.click();
+                handleFileSelection(file);
             }
         });
+
+        function handleFileSelection(file) {
+            const fileName = file.name;
+            const fileExtension = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+            
+            // Check if file extension is supported
+            if (!window.emuConfig.extensions[fileExtension]) {
+                alert(`Unsupported file type: ${fileExtension}\nSupported types: .p8, .p8.png`);
+                return;
+            }
+
+            const loadConfig = window.emuConfig.extensions[fileExtension];
+            const engineConfig = window.emuConfig.engines[loadConfig.engine];
+
+            if (loadConfig.loadAs === 'data') {
+                // For .p8 files: read as text/data
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const gameData = e.target.result;
+                    startGame(engineConfig, fileName, gameData, null);
+                };
+                reader.onerror = () => {
+                    alert('Error reading file');
+                };
+                reader.readAsText(file);
+            } else if (loadConfig.loadAs === 'url') {
+                // For .p8.png files: create a blob URL
+                const gameUrl = URL.createObjectURL(file);
+                startGame(engineConfig, fileName, null, gameUrl);
+            }
+        }
+
+        function startGame(engineConfig, fileName, gameData, gameUrl) {
+            // Hide game picker, show game container
+            gamePicker.style.display = 'none';
+            gameContainer.style.display = 'block';
+
+            // Initialize the game
+            window.LoadEngine(
+                engineConfig,           // Engine configuration
+                gameTitle,              // Title element
+                gameCanvas,             // Canvas element
+                gameData,               // Game data (for .p8 files) or null (for .p8.png)
+                fileName,               // Game file name
+                gameUrl                 // Game file URL (for .p8.png files) or null (for .p8)
+            );
+        }
 
         // Add keyboard support for the button
         loadGameButton.addEventListener('keydown', (event) => {
@@ -54,3 +146,4 @@
         });
     </script>
 </body>
+</html>
