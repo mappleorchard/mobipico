@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MobiPico</title>
     <style>
         body {
@@ -10,6 +10,9 @@
             padding: 10px;
             background-color: #f0f0f0;
             font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .game-picker {
@@ -22,98 +25,57 @@
 
         .load-game-button {
             display: inline-block;
-            padding: 10px 20px;
-            font-size: 16px;
+            padding: 15px 30px;
+            font-size: 18px;
             color: white;
-            background-color: blue;
+            background-color: #2D5AF7;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
+            transition: background-color 0.2s;
         }
 
         .load-game-button:hover {
-            background-color: darkblue;
+            background-color: #1a3eb3;
         }
 
         .file-picker {
             display: none;
         }
 
-        .debug-info {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #ddd;
-            border-radius: 5px;
-            max-width: 500px;
-            text-align: left;
-            max-height: 400px;
-            overflow-y: auto;
-            font-size: 12px;
-            font-family: monospace;
-        }
-
-        .debug-info p {
-            margin: 2px 0;
-            padding: 2px 4px;
-            border-bottom: 1px solid #999;
-        }
-
-        .debug-info p.error {
-            color: red;
-            background-color: #ffcccc;
-        }
-
-        .debug-info p.success {
-            color: green;
-            background-color: #ccffcc;
-        }
-
-        .debug-info p.button {
-            color: darkblue;
-            background-color: #ccccff;
-            font-weight: bold;
-        }
-
-        .debug-info p.keydown {
-            color: darkgreen;
-            background-color: #ddffdd;
-        }
-
-        .debug-info p.keyup {
-            color: darkred;
-            background-color: #ffffdd;
-        }
-
         #gameContainer {
             display: none;
             width: 100%;
-            height: 100%;
+            max-width: 512px;
+            text-align: center;
         }
 
         canvas {
             display: block;
-            margin: 0 auto;
-            border: 1px solid black;
+            margin: 20px auto;
+            border: 2px solid #333;
+            background-color: #000;
+            max-width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+        }
+
+        h1, h2 {
+            color: #333;
         }
     </style>
 </head>
 <body>
     <div id="gamePicker" class="game-picker">
-        <h1>Welcome to MobiPico</h1>
+        <h1>MobiPico</h1>
         <p>Select a PICO-8 game file (.p8 or .p8.png)</p>
-        <button class="load-game-button" id="loadGameButton">Load Game</button>
+        <button class="load-game-button" id="loadGameButton">Load Cartridge</button>
         <input type="file" class="file-picker" id="filePicker" accept=".p8,.p8.png" />
-        <div class="debug-info">
-            <div id="debugOutput"></div>
-        </div>
     </div>
 
     <div id="gameContainer">
         <h2 id="gameTitle"></h2>
         <canvas id="gameCanvas"></canvas>
-        <div class="debug-info">
-            <div id="gameDebugOutput"></div>
-        </div>
     </div>
 
     <!-- Load configuration and engine loader -->
@@ -121,7 +83,6 @@
     <script src="engines/pico8/load.js"></script>
 
     <script>
-        // Setup engine root directory
         window.engineRootDir = 'engines/pico8';
 
         const loadGameButton = document.getElementById('loadGameButton');
@@ -130,89 +91,15 @@
         const gameContainer = document.getElementById('gameContainer');
         const gameTitle = document.getElementById('gameTitle');
         const gameCanvas = document.getElementById('gameCanvas');
-        const debugOutput = document.getElementById('debugOutput');
-        const gameDebugOutput = document.getElementById('gameDebugOutput');
-
-        // Initialize debug output
-        debugOutput.innerHTML = '';
-
-        function log(message, type = 'info', target = 'main') {
-            const timestamp = new Date().toLocaleTimeString();
-            const logMessage = `[${timestamp}] ${message}`;
-            
-            console.log(logMessage);
-            
-            const p = document.createElement('p');
-            p.textContent = logMessage;
-            
-            if (type === 'error') {
-                p.className = 'error';
-            } else if (type === 'success') {
-                p.className = 'success';
-            } else if (type === 'button') {
-                p.className = 'button';
-            } else if (type === 'keydown') {
-                p.className = 'keydown';
-            } else if (type === 'keyup') {
-                p.className = 'keyup';
-            }
-            
-            const targetElement = target === 'game' ? gameDebugOutput : debugOutput;
-            targetElement.appendChild(p);
-            
-            // Auto-scroll to bottom
-            targetElement.parentElement.scrollTop = targetElement.parentElement.scrollHeight;
-        }
-
-        function logError(message) {
-            log('ERROR: ' + message, 'error');
-            alert('Error: ' + message);
-        }
-
-        // Check if config loaded
-        if (window.emuConfig) {
-            log('✓ Config loaded successfully', 'success');
-        } else {
-            logError('Config file failed to load!');
-        }
-
-        // Check if LoadEngine function exists
-        if (window.LoadEngine) {
-            log('✓ LoadEngine function loaded successfully', 'success');
-        } else {
-            logError('LoadEngine function not found!');
-        }
-
-        // Track ALL keyboard events with detailed information
-        document.addEventListener('keydown', (e) => {
-            const details = `KEY: "${e.key}" | CODE: "${e.code}" | WHICH: ${e.which} | KEYCODE: ${e.keyCode}`;
-            log(`⬇ DOWN: ${details}`, 'keydown');
-        });
-
-        document.addEventListener('keyup', (e) => {
-            const details = `KEY: "${e.key}" | CODE: "${e.code}" | WHICH: ${e.which} | KEYCODE: ${e.keyCode}`;
-            log(`⬆ UP: ${details}`, 'keyup');
-        });
-
-        // Track mouse clicks
-        document.addEventListener('click', (e) => {
-            if (e.target.id === 'loadGameButton') {
-                log('BUTTON CLICKED: Load Game', 'button');
-            }
-        });
 
         loadGameButton.addEventListener('click', () => {
-            log('Load Game button event fired', 'button');
             filePicker.click();
         });
 
         filePicker.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
-                log(`FILE SELECTED: ${file.name} (${file.size} bytes)`, 'success');
                 handleFileSelection(file);
-            } else {
-                log('File selection cancelled');
             }
         });
 
@@ -220,147 +107,53 @@
             const fileName = file.name;
             const fileExtension = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
             
-            log(`Analyzing file extension: "${fileExtension}"`);
-
-            // Check if file extension is supported
-            if (!window.emuConfig.extensions[fileExtension]) {
-                logError(`Unsupported file type: ${fileExtension}\nSupported types: .p8, .p8.png`);
+            if (!window.emuConfig || !window.emuConfig.extensions[fileExtension]) {
+                console.error("Unsupported file type or config missing");
                 return;
             }
 
             const loadConfig = window.emuConfig.extensions[fileExtension];
-            log(`Load config: engine=${loadConfig.engine}, loadAs=${loadConfig.loadAs}`, 'success');
-
             const engineConfig = window.emuConfig.engines[loadConfig.engine];
-            if (!engineConfig) {
-                logError('Engine configuration not found for: ' + loadConfig.engine);
-                return;
-            }
 
-            log(`✓ Engine config loaded: ${loadConfig.engine}`, 'success');
+            if (!engineConfig) return;
 
             if (loadConfig.loadAs === 'data') {
-                log('Reading file as text data...');
                 const reader = new FileReader();
-                
-                reader.onload = (e) => {
-                    const gameData = e.target.result;
-                    log(`✓ File read successfully (${gameData.length} characters)`, 'success');
-                    startGame(engineConfig, fileName, gameData, null);
-                };
-                
-                reader.onerror = (e) => {
-                    logError('FileReader error: ' + e.target.error);
-                };
-                
-                reader.onprogress = (e) => {
-                    if (e.lengthComputable) {
-                        const percentComplete = (e.loaded / e.total) * 100;
-                        log(`Reading... ${Math.round(percentComplete)}%`);
-                    }
-                };
-                
+                reader.onload = (e) => startGame(engineConfig, fileName, e.target.result, null);
                 reader.readAsText(file);
-                
             } else if (loadConfig.loadAs === 'url') {
-                log('Creating blob URL for file...');
                 const gameUrl = URL.createObjectURL(file);
-                log(`✓ Blob URL created: ${gameUrl}`, 'success');
                 startGame(engineConfig, fileName, null, gameUrl);
             }
         }
 
         function startGame(engineConfig, fileName, gameData, gameUrl) {
-            log(`Starting game...`, 'success');
-            log(`fileName: ${fileName}`);
-            log(`gameData: ${gameData ? gameData.length + ' chars' : 'null'}`);
-            log(`gameUrl: ${gameUrl ? gameUrl : 'null'}`);
-
-            // Hide game picker, show game container
             gamePicker.style.display = 'none';
             gameContainer.style.display = 'block';
 
             try {
-                log(`Calling LoadEngine function...`, 'success');
-                
-                // Initialize the game
-                window.LoadEngine(
-                    engineConfig,           // Engine configuration
-                    gameTitle,              // Title element
-                    gameCanvas,             // Canvas element
-                    gameData,               // Game data (for .p8 files) or null (for .p8.png)
-                    fileName,               // Game file name
-                    gameUrl                 // Game file URL (for .p8.png files) or null (for .p8)
-                );
-                
-                log('✓ LoadEngine executed successfully!', 'success');
-                
-                // Start tracking game button presses
-                log('Setting up game button tracking...', 'success');
-                setupGameButtonTracking(engineConfig);
-                
+                if (window.LoadEngine) {
+                    window.LoadEngine(
+                        engineConfig,
+                        gameTitle,
+                        gameCanvas,
+                        gameData,
+                        fileName,
+                        gameUrl
+                    );
+                }
             } catch (error) {
-                logError('LoadEngine error: ' + error.message);
-                console.error(error);
+                console.error('LoadEngine error:', error);
             }
         }
 
-        function setupGameButtonTracking(engineConfig) {
-            const emuKeys = engineConfig.keys;
-            
-            log('=== GAME BUTTON MAPPING ===', 'button', 'game');
-            log(`Left Arrow: ${emuKeys.Left}`, 'info', 'game');
-            log(`Right Arrow: ${emuKeys.Right}`, 'info', 'game');
-            log(`Up Arrow: ${emuKeys.Up}`, 'info', 'game');
-            log(`Down Arrow: ${emuKeys.Down}`, 'info', 'game');
-            log(`Action1 (O): ${emuKeys.Action1}`, 'info', 'game');
-            log(`Action2 (X): ${emuKeys.Action2}`, 'info', 'game');
-            log(`Pause/Menu: ${emuKeys.Pause}`, 'info', 'game');
-            log(`Swap Action Buttons: ${emuKeys.SwapActionBtns}`, 'info', 'game');
-            log(`Switch Game: ${emuKeys.SwitchGame}`, 'info', 'game');
-            log('=== PRESS BUTTONS TO TEST ===', 'button', 'game');
-            
-            // Track button presses during gameplay
-            document.addEventListener('keydown', (e) => {
-                const mappedButton = getKeyName(emuKeys, e.key);
-                if (mappedButton) {
-                    log(`🎮 GAME BUTTON DOWN: ${mappedButton} (${e.key})`, 'button', 'game');
-                } else {
-                    const details = `KEY: "${e.key}" | CODE: "${e.code}" | WHICH: ${e.which} | KEYCODE: ${e.keyCode}`;
-                    log(`⬇ Other key: ${details}`, 'keydown', 'game');
-                }
-            });
-            
-            document.addEventListener('keyup', (e) => {
-                const mappedButton = getKeyName(emuKeys, e.key);
-                if (mappedButton) {
-                    log(`🎮 GAME BUTTON UP: ${mappedButton} (${e.key})`, 'button', 'game');
-                } else {
-                    const details = `KEY: "${e.key}" | CODE: "${e.code}" | WHICH: ${e.which} | KEYCODE: ${e.keyCode}`;
-                    log(`⬆ Other key: ${details}`, 'keyup', 'game');
-                }
-            });
-        }
-
-        function getKeyName(emuKeys, key) {
-            for (const [buttonName, buttonKey] of Object.entries(emuKeys)) {
-                if (buttonKey === key) {
-                    return buttonName;
-                }
-            }
-            return null;
-        }
-
-        // Add keyboard support for the button
+        // Handle keyboard accessibility for the main button
         loadGameButton.addEventListener('keydown', (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
-                log('Load Game button activated via keyboard', 'button');
                 filePicker.click();
             }
         });
-
-        log('Script loaded and initialized', 'success');
     </script>
 </body>
 </html>
