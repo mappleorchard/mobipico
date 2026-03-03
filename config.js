@@ -4,7 +4,7 @@ window.emuConfig = {
   },
   extensions: { //map extension to engine and loading method
     '.p8': {engine: 'pico8', loadAs: 'data'},
-    '.p8.png': {engine: 'pico8', loadAs: 'url'}
+    '.p8.png': {engine: 'pico8', loadAs: 'url'},
     '.png': {engine: 'pico8', loadAs: 'url'}
   },
   engines: { //engine feature definitions
