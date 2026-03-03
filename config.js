@@ -14,15 +14,21 @@ window.emuConfig = {
         height: 128
       },
       keys: {
-        Left: 'ArrowLeft',
-        Right: 'ArrowRight',
-        Up: 'ArrowUp',
-        Down: 'ArrowDown',
-        Action1: 'Enter', //O
+        Left: '4',
+        Right: '6',
+        Up: '2',
+        Down: '8',
+        Action1: '0', //O
         Action2: '*',     //X
         Pause: 'Call',
         SwapActionBtns: '#',
         SwitchGame: 'SoftLeft'
+            // Feature-phone / KaiOS fallbacks (common alternate mappings)
+            // Map numeric keypad 2/8/4/6 to arrows if device doesn't produce Arrow keys.
+  //  if (kc === 50 /* '2' */) return 'up';
+    //if (kc === 56 /* '8' */) return 'down';
+  //  if (kc === 52 /* '4' */) return 'left';
+   // if (kc === 54 /* '6' */) return 'right';
       }
     }
   }
