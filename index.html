@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.2">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MobiPico</title>
     <style>
         body {
@@ -28,7 +28,7 @@
             padding: 15px 30px;
             font-size: 18px;
             color: white;
-            background-color: #2D5AF7;
+            background-color: #b84421;
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -36,7 +36,7 @@
         }
 
         .load-game-button:hover {
-            background-color: #b84b2a;
+            background-color: #bd2d02;
         }
 
         .file-picker {
@@ -46,20 +46,24 @@
         #gameContainer {
             display: none;
             width: 100%;
-            max-width: 512px;
             text-align: center;
         }
-
+        
         canvas {
             display: block;
-            margin: 20px auto;
+            margin: 10px auto; /* Reduced top margin since h2 is gone */
             border: 2px solid #333;
             background-color: #000;
-            max-width: 100%;
-            height: auto;
             image-rendering: pixelated;
+        
+            /* Use 95% of the smallest side to maximize size */
+            width: 95vmin; 
+            height: 95vmin;
+            
+            /* Keep a reasonable cap for huge monitors */
+            max-width: 1200px;
+            max-height: 1200px;
         }
-
         h1 {
             color: #333;
         }
@@ -75,6 +79,7 @@
     </div>
 
     <div id="gameContainer">
+        <span id="gameTitle" style="display: none;"></span>
         <canvas id="gameCanvas"></canvas>
     </div>
 
