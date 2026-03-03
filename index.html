@@ -92,7 +92,7 @@
 
         function handleFileSelection(file) {
             const fileName = file.name;
-            const fileExtension = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+            const fileExtension = fileName.substring(fileName.firstIndexOf('.')).toLowerCase();
             
             // Check if file extension is supported
             if (!window.emuConfig.extensions[fileExtension]) {
