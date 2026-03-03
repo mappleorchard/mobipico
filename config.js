@@ -18,8 +18,8 @@ window.emuConfig = {
         Right: '6',
         Up: '2',
         Down: '8',
-        Action1: '0', //O
-        Action2: '*',     //X
+        Action1: '*', //O
+        Action2: '0',     //X
         Pause: 'Call',
         SwapActionBtns: '#',
         SwitchGame: 'SoftLeft'
