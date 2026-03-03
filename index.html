@@ -39,6 +39,15 @@
             display: none;
         }
 
+        .debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #ddd;
+            border-radius: 5px;
+            max-width: 500px;
+            text-align: left;
+        }
+
         #gameContainer {
             display: none;
             width: 100%;
@@ -48,6 +57,7 @@
         canvas {
             display: block;
             margin: 0 auto;
+            border: 1px solid black;
         }
     </style>
 </head>
@@ -56,7 +66,10 @@
         <h1>Welcome to MobiPico</h1>
         <p>Select a PICO-8 game file (.p8 or .p8.png)</p>
         <button class="load-game-button" id="loadGameButton">Load Game</button>
-        <input type="file" class="file-picker" id="filePicker" accept=".p8,.p8.png,.png" />
+        <input type="file" class="file-picker" id="filePicker" accept=".p8,.p8.png" />
+        <div class="debug-info">
+            <div id="debugOutput">No file selected yet</div>
+        </div>
     </div>
 
     <div id="gameContainer">
@@ -78,63 +91,121 @@
         const gameContainer = document.getElementById('gameContainer');
         const gameTitle = document.getElementById('gameTitle');
         const gameCanvas = document.getElementById('gameCanvas');
+        const debugOutput = document.getElementById('debugOutput');
+
+        function log(message) {
+            console.log('[MobiPico] ' + message);
+            debugOutput.innerHTML += '<p>' + message + '</p>';
+        }
+
+        function logError(message) {
+            console.error('[MobiPico Error] ' + message);
+            debugOutput.innerHTML += '<p style="color: red;"><strong>ERROR:</strong> ' + message + '</p>';
+            alert('Error: ' + message);
+        }
+
+        // Check if config loaded
+        if (window.emuConfig) {
+            log('✓ Config loaded successfully');
+        } else {
+            logError('Config file failed to load!');
+        }
+
+        // Check if LoadEngine function exists
+        if (window.LoadEngine) {
+            log('✓ LoadEngine function loaded successfully');
+        } else {
+            logError('LoadEngine function not found!');
+        }
 
         loadGameButton.addEventListener('click', () => {
+            log('Load Game button clicked');
             filePicker.click();
         });
 
         filePicker.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
+                log('File selected: ' + file.name + ' (' + file.size + ' bytes)');
                 handleFileSelection(file);
+            } else {
+                log('File selection cancelled');
             }
         });
 
         function handleFileSelection(file) {
             const fileName = file.name;
-            const fileExtension = fileName.substring(fileName.firstIndexOf('.')).toLowerCase();
+            const fileExtension = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
             
+            log('File extension: ' + fileExtension);
+
             // Check if file extension is supported
             if (!window.emuConfig.extensions[fileExtension]) {
-                alert(`Unsupported file type: ${fileExtension}\nSupported types: .p8, .p8.png`);
+                logError('Unsupported file type: ' + fileExtension + '\nSupported types: .p8, .p8.png');
                 return;
             }
 
             const loadConfig = window.emuConfig.extensions[fileExtension];
+            log('Load config: ' + JSON.stringify(loadConfig));
+
             const engineConfig = window.emuConfig.engines[loadConfig.engine];
+            if (!engineConfig) {
+                logError('Engine configuration not found for: ' + loadConfig.engine);
+                return;
+            }
+
+            log('Engine config loaded: ' + loadConfig.engine);
 
             if (loadConfig.loadAs === 'data') {
-                // For .p8 files: read as text/data
+                log('Loading as data (text)...');
                 const reader = new FileReader();
+                
                 reader.onload = (e) => {
                     const gameData = e.target.result;
+                    log('File read successfully (' + gameData.length + ' characters)');
                     startGame(engineConfig, fileName, gameData, null);
                 };
-                reader.onerror = () => {
-                    alert('Error reading file');
+                
+                reader.onerror = (e) => {
+                    logError('FileReader error: ' + e.target.error);
                 };
+                
                 reader.readAsText(file);
+                
             } else if (loadConfig.loadAs === 'url') {
-                // For .p8.png files: create a blob URL
+                log('Loading as URL (blob)...');
                 const gameUrl = URL.createObjectURL(file);
+                log('Blob URL created: ' + gameUrl);
                 startGame(engineConfig, fileName, null, gameUrl);
             }
         }
 
         function startGame(engineConfig, fileName, gameData, gameUrl) {
+            log('Starting game with fileName: ' + fileName);
+            log('Game data: ' + (gameData ? gameData.length + ' chars' : 'null'));
+            log('Game URL: ' + (gameUrl ? gameUrl : 'null'));
+
             // Hide game picker, show game container
             gamePicker.style.display = 'none';
             gameContainer.style.display = 'block';
 
-            // Initialize the game
-            window.LoadEngine(
-                engineConfig,           // Engine configuration
-                gameTitle,              // Title element
-                gameCanvas,             // Canvas element
-                gameData,               // Game data (for .p8 files) or null (for .p8.png)
-                fileName,               // Game file name
-                gameUrl                 // Game file URL (for .p8.png files) or null (for .p8)
-            );
+            try {
+                // Initialize the game
+                window.LoadEngine(
+                    engineConfig,           // Engine configuration
+                    gameTitle,              // Title element
+                    gameCanvas,             // Canvas element
+                    gameData,               // Game data (for .p8 files) or null (for .p8.png)
+                    fileName,               // Game file name
+                    gameUrl                 // Game file URL (for .p8.png files) or null (for .p8)
+                );
+                
+                log('LoadEngine called successfully!');
+                
+            } catch (error) {
+                logError('LoadEngine error: ' + error.message);
+                console.error(error);
+            }
         }
 
         // Add keyboard support for the button
@@ -144,6 +215,8 @@
                 filePicker.click();
             }
         });
+
+        log('Script loaded and initialized');
     </script>
 </body>
 </html>
